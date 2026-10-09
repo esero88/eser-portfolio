@@ -29,3 +29,9 @@ Data analytics portfolio projects by Eser Karaceper. Each project lives in its o
 **Result:** Kimball data warehouse with a staging layer, enrichment rules for customers and transactions, and analytical data marts for segmentation.
 **Folder:** [bank-customer-segmentation](bank-customer-segmentation/)
 
+### 5. WHO Global Health Indicators Analysis
+**Question:** How do countries compare on health workforce density and immunization coverage?
+**Tools:** Python, WHO GHO API, Tableau
+**Result:** Tableau dashboard built on cleaned WHO data covering medical doctors, nursing and midwifery density and DTP3 immunization coverage.
+**Folder:** [who-health-indicators-analysis](who-health-indicators-analysis/)
+
