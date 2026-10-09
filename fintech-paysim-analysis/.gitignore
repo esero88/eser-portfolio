@@ -1,0 +1,11 @@
+# Project specific
+data/
+*.csv
+*.zip
+*.pbix
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+.env

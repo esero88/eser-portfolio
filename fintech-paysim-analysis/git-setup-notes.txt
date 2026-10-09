@@ -1,0 +1,51 @@
+## Git & GitHub Setup (Project Workflow)
+
+This section documents the actual steps and issues encountered while setting up the project with Git and GitHub.
+
+1. Initialize Git
+git init
+
+2. Create .gitignore
+data/
+*.csv
+*.zip
+.ipynb_checkpoints/
+
+3. Add and Commit Files
+git add .
+git commit -m "initial project setup"
+
+4. Connect to GitHub Repository
+git remote add origin https://github.com/esero88/fintech-paysim-analysis.git
+
+5. First Push Attempt
+git push -u origin main
+
+Issue:
+Push was rejected because the remote repository already contained commits.
+
+6. Pull Remote Changes (Fix)
+git pull origin main --rebase
+
+7. Resolve Conflicts (if any)
+- Open conflicted file
+- Keep correct content
+- Save file
+
+git add .
+git commit -m "resolve merge conflict"
+
+8. Push to GitHub
+git push
+
+Notes:
+- GitHub authentication requires Personal Access Token (PAT)
+- Large files are excluded using .gitignore
+- Dataset is downloaded via Kaggle API
+- git pull --rebase is used to keep history clean
+
+Key Learnings:
+- Handling push rejections due to remote changes
+- Using rebase instead of merge
+- Managing large datasets in Git projects
+- Understanding real-world Git workflows
