@@ -1,6 +1,6 @@
 # A/B Testing Analysis - E-commerce Dataset
 
-This project analyzes an A/B testing experiment using e-commerce data to evaluate the impact of different variants on user conversion. It includes a Power BI dashboard for the wider e-commerce context.
+This project analyzes an A/B testing experiment using e-commerce data to evaluate the impact of different variants on user conversion. It includes a Power BI dashboard for the wider e-commerce context and the A/B test results.
 
 ---
 
@@ -43,16 +43,18 @@ Users can have events under more than one experiment label. Each user is assigne
 
 | Group | Users | Conversion rate | Lift vs Control | p-value (Z-test) |
 |---|---|---|---|---|
-| Control | 60,015 | XX.X% | - | - |
-| Variant_A | 20,067 | XX.X% | X.X% | 0.XXX |
-| Variant_B | 19,918 | XX.X% | X.X% | 0.XXX |
+| Control | 60,015 | 63.95% | - | - |
+| Variant_A | 20,067 | 64.24% | +0.45% | 0.460 |
+| Variant_B | 19,918 | 64.08% | +0.21% | 0.737 |
 
 ---
 
 ## 🚨 Conclusion
 
-- (If p > 0.05) No strong evidence that the variants change conversion. Observed differences may be due to random variation. **Recommendation:** do not roll out the variants.
-- (If p < 0.05) The variant shows a statistically significant difference. **Recommendation:** decide the rollout based on the lift and its direction.
+- Both variants convert slightly higher than Control (+0.29 and +0.13 percentage points), but the differences are **not statistically significant** (p > 0.05).
+- No evidence that either variant changes conversion. The observed differences are consistent with random variation.
+- **Recommendation:** the data does not justify rolling out either variant. Test stronger variations or run the experiment longer.
+- The first attempt (`02` notebook) showed negative lift for both variants. That result came from an unbalanced group assignment and was corrected in `03`.
 
 ---
 
@@ -66,7 +68,7 @@ Users can have events under more than one experiment label. Each user is assigne
 
 ## 📊 Dashboard
 
-A Power BI dashboard summarizes the e-commerce dataset: users, transactions, revenue, session duration, conversion rate, geography, devices, age, event funnel, and revenue trend.
+A Power BI dashboard summarizes the e-commerce dataset: users, transactions, revenue, session duration, conversion rate, geography, devices, age, event funnel, and revenue trend. A separate "A/B Testing Results" page shows conversion rate by experiment group and the lift of each variant.
 
 ![Dashboard](Dashboard_SS.png)
 
