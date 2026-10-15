@@ -88,7 +88,7 @@ A dedicated data mart was designed to transform transaction data into **business
 ## ⚡ Performance Optimization
 
 - Indexes created on frequently filtered columns:
-  - `transaction_date`
+  - `transaction_timestamp`
   - `transaction_type`
 - Improved query performance for analytical workloads  
 
