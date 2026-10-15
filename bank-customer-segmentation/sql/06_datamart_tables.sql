@@ -244,7 +244,7 @@ CREATE TABLE datamart.mart_rfm_segmentation AS
 WITH rfm_base AS (
     SELECT
         customer_id,
-        CURRENT_DATE - last_transaction_date AS recency,
+        (SELECT MAX(last_transaction_date) FROM datamart.mart_customer_summary) - last_transaction_date AS recency,
         total_transactions AS frequency,
         total_amount AS monetary
     FROM datamart.mart_customer_summary
@@ -255,9 +255,9 @@ rfm_scores AS (
         recency,
         frequency,
         monetary,
-        NTILE(5) OVER (ORDER BY recency ASC) AS recency_score,
-        NTILE(5) OVER (ORDER BY frequency DESC) AS frequency_score,
-        NTILE(5) OVER (ORDER BY monetary DESC) AS monetary_score
+        NTILE(5) OVER (ORDER BY recency DESC) AS recency_score,
+        NTILE(5) OVER (ORDER BY frequency ASC) AS frequency_score,
+        NTILE(5) OVER (ORDER BY monetary ASC) AS monetary_score
     FROM rfm_base
 )
 SELECT

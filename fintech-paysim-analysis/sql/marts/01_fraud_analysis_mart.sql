@@ -72,7 +72,7 @@ LIMIT 20;
 
 
 CREATE INDEX idx_datamart_date
-ON datamart.financial_summary(transaction_date);
+ON datamart.financial_summary(transaction_timestamp);
 
 CREATE INDEX idx_datamart_type
 ON datamart.financial_summary(transaction_type);
