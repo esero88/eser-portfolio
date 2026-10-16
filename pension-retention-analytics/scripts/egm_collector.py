@@ -156,6 +156,32 @@ def tarih_secicisini_bul(sayfa, zorla: str | None = None):
     return None, None
 
 
+def sayfadaki_tarih(sayfa) -> str:
+    """Raporun uzerinde yazan tarihi bulur; bulamazsa 'guncel' doner."""
+    # 1) Secili tarih <option>'i
+    try:
+        _, sec = tarih_secicisini_bul(sayfa)
+        if sec is not None:
+            secili = sec.evaluate(
+                "e => e.options[e.selectedIndex] ? e.options[e.selectedIndex].text : ''"
+            )
+            if secili and tarih_gibi(secili):
+                return tarih_slug(secili)
+    except Exception:
+        pass
+
+    # 2) Baslik altindaki 30.09.2026 benzeri metin
+    try:
+        govde = sayfa.inner_text("body")[:4000]
+        m = re.search(r"\b(\d{2})\.(\d{2})\.(\d{4})\b", govde)
+        if m:
+            return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+    except Exception:
+        pass
+
+    return "guncel"
+
+
 def export_dugmesini_bul(sayfa):
     """'Excel'e Aktar' dugmesini arar."""
     for ctx in cerceveler(sayfa):
@@ -229,6 +255,8 @@ def main() -> int:
     ap.add_argument("--probe", action="store_true", help="Sadece kesfet, indirme yapma")
     ap.add_argument("--select", default=None,
                     help="Tarih kutusunu CSS secicisiyle zorla, orn. select.egm-report-date")
+    ap.add_argument("--current", action="store_true",
+                    help="Tarih listesini hic kullanma; sayfadaki guncel hali indir")
     args = ap.parse_args()
 
     hedef = Path(args.out) / args.code
@@ -242,6 +270,30 @@ def main() -> int:
         print(f"Aciliyor: {args.url}")
         sayfa.goto(args.url, wait_until="domcontentloaded")
         sayfayi_bekle(sayfa, args.timeout)
+
+        if args.current:
+            dugme = export_dugmesini_bul(sayfa)
+            if dugme is None:
+                print("HATA: Excel dugmesi bulunamadi.")
+                yapiyi_dok(sayfa)
+                tarayici.close()
+                return 1
+
+            etiket = sayfadaki_tarih(sayfa)
+            dosya = hedef / f"{args.code}_{etiket}.xlsx"
+            print(f"Guncel hal indiriliyor -> {dosya.name}")
+            try:
+                with sayfa.expect_download(timeout=args.timeout) as indirme:
+                    dugme.click()
+                indirme.value.save_as(dosya)
+                boyut = dosya.stat().st_size
+                print(f"TAMAM  {dosya}  ({boyut:,} byte)")
+            except Exception as hata:
+                print(f"HATA: {type(hata).__name__}: {hata}")
+                tarayici.close()
+                return 1
+            tarayici.close()
+            return 0
 
         ctx, secici = tarih_secicisini_bul(sayfa, args.select)
         if secici is None:
