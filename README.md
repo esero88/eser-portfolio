@@ -35,3 +35,9 @@ Data analytics portfolio projects by Eser Karaceper. Each project lives in its o
 **Result:** Tableau dashboard built on cleaned WHO data covering medical doctors, nursing and midwifery density and DTP3 immunization coverage.
 **Folder:** [who-health-indicators-analysis](who-health-indicators-analysis/)
 
+### 6. Pension Retention Analytics (BES)
+**Question:** How long do Turkish private pension contracts survive, why do they end, and where does each company stand?
+**Tools:** Python (Playwright, pandas), PostgreSQL, Tableau, RAG-based NL-to-SQL agent
+**Result:** In progress.
+**Folder:** [pension-retention-analytics](pension-retention-analytics/)
+
