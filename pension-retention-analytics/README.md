@@ -1,121 +1,51 @@
 # Pension Retention Analytics (BES)
 
-> Çalışma devam ediyor. Bulgular analiz tamamlandıkça bu README'ye eklenecek.
+How long do Turkish private pension contracts survive, why do they end, and where does each company stand?
 
-**Soru:** Türkiye bireysel emeklilik sisteminde sözleşmeler ne kadar süre yaşıyor, neden
-sonlanıyor, ve bu tabloda tek tek şirketler nerede duruyor?
+> Work in progress. Findings will be added once the analysis is done.
 
-**Araçlar:** Python (Playwright, pandas), PostgreSQL, Tableau, RAG tabanlı doğal dil → SQL agent
+## Question and audience
+A product or CRM manager at a pension company who needs to know whether contracts are being kept, which exit reasons dominate, and how the company compares with its competitors on fund size and cost.
 
-**Veri kaynağı:** [Emeklilik Gözetim Merkezi (EGM)](https://www.egm.org.tr/) — Bilgi Merkezi > İstatistikler
+## Data
+Emeklilik Gözetim Merkezi (EGM) publishes statistics on the Turkish private pension system. Reports collected:
 
----
+| Code | Report |
+|---|---|
+| `GR-01-015` | Termination rate of contracts by entry month |
+| `GR-01-010` | Terminated contracts by reason |
+| `GR-01-019` | Withdrawal (cayma) rate |
+| `GR-01-018` | Transfers between companies, by time spent at previous company |
+| `GR-01-116` | Termination and collection rates by entry year (sector) |
+| `EGM-05-006` | Fund size by pension company |
+| `EGM-05-001` | Fund management fee rates |
+| `EGM-05-012` | List of pension investment funds |
 
-## Proje ne yapacak
+EGM reports are aggregate, not participant level. The dashboard is built on these published figures only. A separate simulated participant-level table, calibrated to the same aggregates, is used to test the NL-to-SQL agent. No dashboard figure comes from simulated data.
 
-1. EGM'nin yayınladığı BES istatistik raporlarını tarih tarih toplar.
-2. Çok satırlı başlıkları ve dağınık formatları temizleyip analiz edilebilir hale getirir.
-3. Temiz tabloları bir PostgreSQL ambarına yükler.
-4. Sözleşme kalıcılığını, sonlanma nedenlerini ve şirketlerin rekabet konumunu
-   Tableau'da görselleştirir.
-5. Doğal dilde sorulan iş sorularını metrik sözlüğüne sadık SQL'e çeviren bir agent kurar.
-6. Agent'ı 30 soruluk bir test setiyle ölçer, doğruluk ve hata türlerini tabloya döker.
+## Method
+1. Collect each report across its date range with `scripts/egm_collector.py`.
+2. Flatten multi-row headers and reshape to long format.
+3. Load the clean tables into a PostgreSQL star schema.
+4. Build the Tableau dashboard on the cleaned extracts.
+5. Write a metric dictionary (persistency, withdrawal rate, net flow) and a RAG agent that translates plain-language questions into SQL against it.
+6. Score the agent on a 30-question test set and report accuracy and error types.
 
----
-
-## Veri katmanları
-
-Proje iki veri katmanı üzerine kurulu. Ayrım bilinçli ve README'de açıkça duruyor:
-
-| Katman | Kaynak | Kullanım |
-|---|---|---|
-| **Gerçek** | EGM istatistik raporları (agregat) | Dashboard — kalıcılık, sonlanma nedenleri, pazar payı, maliyet |
-| **Simüle** | Gerçek agregatlara kalibre edilmiş sentetik katılımcı/sözleşme tabloları | SQL agent'ın test ortamı |
-
-Simüle katman neden gerekli: EGM verisi agregat seviyede yayınlanıyor, katılımcı
-seviyesinde değil. Doğal dilden SQL üreten bir agent'ı test etmek için join yapılabilir,
-grain'i ince bir ambar gerekiyor. Bu katmanın marjinal dağılımları ve iş kuralları
-gerçek EGM agregatlarına tutturulacak — rastgele üretim değil, kalibre simülasyon.
-
-**Dashboard'daki hiçbir bulgu simüle veriden gelmeyecek.**
-
----
-
-## Toplanacak raporlar
-
-| Kod | Rapor | Ne için |
-|---|---|---|
-| `GR-01-015` | Sözleşmelerin Yürürlüğe Giriş Ayına Göre Sonlanma Oranı | Aylık kohort retention eğrisi |
-| `GR-01-010` | Sonlanan Sözleşmelerin Sonlanma Nedenine Göre Dağılımı | Ayrılma nedeni kırılımı |
-| `GR-01-019` | Cayma Hakkı Kullanım Oranı | Cayma trendi |
-| `GR-01-018` | Şirketler Arası Aktarım — önceki şirkette geçirilen süre | Şirket değiştirme davranışı |
-| `GR-01-116` | Giriş Yıllarına Göre Sonlanma ve Tahsilat Oranları (Sektör) | Kohort tahsilat |
-| `EGM-05-006` | Emeklilik Şirketi ve Faiz Detayında Fon Büyüklükleri | Şirket bazında pazar payı |
-| `EGM-05-001` | Fon Bazında Fon İşletim Gideri Kesinti Oranları | Maliyet rekabeti |
-| `EGM-05-012` | Emeklilik Yatırım Fonları Listesi | Fon → şirket eşlemesi |
-
-Kontrol edilecek: `GR-01-*` raporlarının hangileri şirket kırılımı içeriyor, hangileri
-sektör toplamı. Şirket bazlı karşılaştırmanın kapsamı buna göre netleşecek.
-
----
-
-## Klasör yapısı
-
-```
-pension-retention-analytics/
-├── notebooks/     # veri toplama, temizleme, analiz defterleri
-├── scripts/       # yeniden kullanılabilir Python modülleri
-├── tableau/       # .twb çalışma kitapları
-└── data/          # ham ve temiz veri — git'e DAHİL DEĞİL (.gitignore)
-    ├── raw/
-    └── clean/
-```
-
-`data/` neden commit edilmiyor: EGM verileri Emeklilik Gözetim Merkezi A.Ş.'ye ait.
-Repo'da veriyi değil, veriyi üreten kodu tutuyoruz. Toplayıcıyı çalıştıran herkes
-aynı veriye kaynağından ulaşabilir.
-
----
-
-## Kurulum
+## Setup
 
 ```bash
 pip install playwright pandas openpyxl
 playwright install chromium
+
+python scripts/egm_collector.py --url "<report url>" --code GR-01-015 --probe
+python scripts/egm_collector.py --url "<report url>" --code GR-01-015 --out data/raw
 ```
 
-## Veri toplama
+## Files
+- `notebooks/01_egm_veri_toplama.ipynb`: data collection notebook (Colab)
+- `scripts/egm_collector.py`: Playwright collector that walks a report's date list and exports each snapshot
+- `tableau/`: Tableau workbook
+- `data/`: raw and cleaned data, not committed
 
-```bash
-# Önce keşif — indirme yapmaz, sadece sayfada ne bulduğunu söyler
-python scripts/egm_collector.py --url "<rapor linki>" --code GR-01-015 --probe
-
-# Sonra toplama
-python scripts/egm_collector.py --url "<rapor linki>" --code GR-01-015 --out data/raw
-```
-
-Colab'da çalışmak için: `notebooks/01_egm_veri_toplama.ipynb`
-
----
-
-## Yol haritası
-
-- [ ] EGM raporlarının toplanması
-- [ ] Temizlik: çok satırlı başlıkların düzleştirilmesi, uzun formata çevirme
-- [ ] PostgreSQL ambarı — yıldız şema
-- [ ] Metrik sözlüğü (kalıcılık, cayma oranı, net akış tanımları)
-- [ ] Tableau dashboard + Tableau Public yayını
-- [ ] Simüle katılımcı katmanı (gerçek agregatlara kalibre)
-- [ ] RAG tabanlı doğal dil → SQL agent
-- [ ] 30 soruluk doğruluk testi ve hata analizi
-
----
-
-## Kaynak
-
-Bu projede kullanılan tüm istatistiksel veriler **Emeklilik Gözetim Merkezi A.Ş. (EGM)**'ye
-aittir. Kaynak gösterilmeden alıntı yapılamaz. https://www.egm.org.tr/
-
----
-
-**Eser Karaceper** — Tableau | SQL | Python | Data Modeling
+## Source
+All statistics belong to Emeklilik Gözetim Merkezi A.Ş. (EGM): https://www.egm.org.tr/
