@@ -1,0 +1,17 @@
+# Project specific
+data/
+*.csv
+*.xlsx
+*.zip
+.ipynb_checkpoints/
+
+# Tableau — .twb (XML, hafif) commit edilir, .twbx veriyi paketlediği için edilmez
+*.twbx
+*.hyper
+*.tde
+
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
