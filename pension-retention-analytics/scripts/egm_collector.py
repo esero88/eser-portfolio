@@ -94,15 +94,65 @@ def cerceveler(sayfa):
     return [sayfa] + [f for f in sayfa.frames if f != sayfa.main_frame]
 
 
-def tarih_secicisini_bul(sayfa):
-    """Tarih <select> ogesini ana sayfada ve iframe'lerde arar."""
+AY_DESENI = "|".join(sorted(AYLAR, key=len, reverse=True))
+
+
+def tarih_gibi(metin: str) -> bool:
+    """Bir <option> metni tarih mi?  '30 Eylul 2026', '30.09.2026', '2026-09-30'."""
+    m = metin.strip()
+    if re.search(rf"\d{{1,2}}\s+({AY_DESENI})\s+\d{{4}}", m, re.I):
+        return True
+    if re.search(r"\b\d{1,2}[.\-/]\d{1,2}[.\-/]\d{4}\b", m):
+        return True
+    if re.search(r"\b\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}\b", m):
+        return True
+    return False
+
+
+def select_adaylari(sayfa):
+    """Sayfadaki ve iframe'lerdeki tum <select>'leri tarih puaniyla dondurur."""
+    adaylar = []
     for ctx in cerceveler(sayfa):
         try:
-            for sec in ctx.locator("select").all():
-                if sec.locator("option").count() > 1:
-                    return ctx, sec
+            secler = ctx.locator("select").all()
         except Exception:
             continue
+        for sec in secler:
+            try:
+                metinler = [t.strip() for t in sec.locator("option").all_inner_texts()]
+            except Exception:
+                continue
+            metinler = [t for t in metinler if t]
+            if len(metinler) < 2:
+                continue
+            puan = sum(tarih_gibi(t) for t in metinler) / len(metinler)
+            try:
+                sinif = sec.evaluate("e => e.className || ''")
+            except Exception:
+                sinif = ""
+            adaylar.append({"ctx": ctx, "sec": sec, "puan": puan,
+                            "n": len(metinler), "ilk": metinler[0][:45],
+                            "sinif": str(sinif)[:45]})
+    adaylar.sort(key=lambda a: (a["puan"], a["n"]), reverse=True)
+    return adaylar
+
+
+def tarih_secicisini_bul(sayfa, zorla: str | None = None):
+    """Secenekleri tarihe benzeyen <select>'i secer."""
+    if zorla:
+        for ctx in cerceveler(sayfa):
+            try:
+                aday = ctx.locator(zorla)
+                if aday.count() > 0:
+                    return ctx, aday.first
+            except Exception:
+                continue
+        return None, None
+
+    adaylar = select_adaylari(sayfa)
+    if adaylar and adaylar[0]["puan"] >= 0.5:
+        en_iyi = adaylar[0]
+        return en_iyi["ctx"], en_iyi["sec"]
     return None, None
 
 
@@ -136,25 +186,14 @@ def yapiyi_dok(sayfa) -> None:
     print(f"komut cubugu ({HAZIR_ISARETI}):",
           "VAR" if sayfa.locator(HAZIR_ISARETI).count() else "YOK")
 
-    for ctx in cerceveler(sayfa):
-        etiket = "sayfa" if ctx is sayfa else "iframe"
-        try:
-            secler = ctx.locator("select").all()
-        except Exception:
-            continue
-        if not secler:
-            continue
-        print(f"\n{etiket}: {len(secler)} adet <select>")
-        for s in secler[:6]:
-            try:
-                bilgi = s.evaluate(
-                    "e => ({cls: e.className, id: e.id, n: e.options.length,"
-                    " ilk: e.options[0] ? e.options[0].text.trim().slice(0,40) : ''})"
-                )
-                print(f"   class={bilgi['cls'][:50]!r} id={bilgi['id'][:30]!r}"
-                      f" secenek={bilgi['n']} ilk={bilgi['ilk']!r}")
-            except Exception:
-                pass
+    adaylar = select_adaylari(sayfa)
+    print(f"\n{len(adaylar)} adet <select> (tarih puanina gore sirali):")
+    for a in adaylar[:8]:
+        print(f"   puan={a['puan']:.2f} secenek={a['n']:<4} "
+              f"class={a['sinif']!r} ilk={a['ilk']!r}")
+    if adaylar:
+        print("\n  Tarih kutusu listede ama puani dusukse:")
+        print("  --select \"select.<class>\" ile zorlayabilirsiniz.")
 
     print("\ntarih/filtre gecen ogeler:")
     try:
@@ -188,6 +227,8 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=45000, help="Sayfa bekleme suresi (ms)")
     ap.add_argument("--headful", action="store_true", help="Tarayiciyi gorunur ac")
     ap.add_argument("--probe", action="store_true", help="Sadece kesfet, indirme yapma")
+    ap.add_argument("--select", default=None,
+                    help="Tarih kutusunu CSS secicisiyle zorla, orn. select.egm-report-date")
     args = ap.parse_args()
 
     hedef = Path(args.out) / args.code
@@ -202,9 +243,9 @@ def main() -> int:
         sayfa.goto(args.url, wait_until="domcontentloaded")
         sayfayi_bekle(sayfa, args.timeout)
 
-        ctx, secici = tarih_secicisini_bul(sayfa)
+        ctx, secici = tarih_secicisini_bul(sayfa, args.select)
         if secici is None:
-            print("HATA: tarih listesi bulunamadi.")
+            print("HATA: secenekleri tarihe benzeyen bir <select> bulunamadi.")
             yapiyi_dok(sayfa)
             print("Yukaridaki ciktiyi paylasin; secici buna gore duzeltilecek.")
             tarayici.close()
