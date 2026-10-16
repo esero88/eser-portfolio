@@ -4,8 +4,12 @@ How long do Turkish private pension contracts survive, why do they end, and wher
 
 > Work in progress. Findings will be added once the analysis is done.
 
+Written up as a full case study following the Ask / Prepare / Process / Analyze / Share / Act structure: [English](docs/case-study-en.md) · [Türkçe](docs/case-study-tr.md).
+
 ## Question and audience
-A product or CRM manager at a pension company who needs to know whether contracts are being kept, which exit reasons dominate, and how the company compares with its competitors on fund size and cost.
+A marketing or CRM decision-maker at a pension company, deciding whether to shift budget from acquiring new contracts to keeping existing ones. Acquisition is easy to measure and shows up fast; persistency shows up late and its measurement is contested, so budget flows to acquisition by default.
+
+The contested metric is "active participant". Turkish regulation lets a participant pause contributions without leaving the system, so a paused contract stays in force and still counts as a participant. A company can report hundreds of thousands of participants while a large share of them pay nothing in. Contracts in force and contracts receiving contributions are two different numbers, and which one you use changes the budget decision.
 
 ## Data
 Emeklilik Gözetim Merkezi (EGM) publishes statistics on the Turkish private pension system. Reports collected:
@@ -42,6 +46,7 @@ python scripts/egm_collector.py --url "<report url>" --code GR-01-015 --out data
 ```
 
 ## Files
+- `docs/`: the case study, in English and Turkish
 - `notebooks/01_egm_veri_toplama.ipynb`: data collection notebook (Colab)
 - `scripts/egm_collector.py`: Playwright collector that walks a report's date list and exports each snapshot
 - `tableau/`: Tableau workbook
